@@ -7,11 +7,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ListAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.util.*
@@ -30,7 +32,7 @@ class CrimeListFragment : Fragment() {
     private var callbacks: Callbacks? = null
 
     private lateinit var crimeRecyclerView: RecyclerView
-    private var adapter: CrimeAdapter? = CrimeAdapter(emptyList())
+    private var adapter: CrimeAdapter = CrimeAdapter()
 
     private val crimeListViewModel: CrimeListViewModel by lazy {
         ViewModelProviders.of(this).get(CrimeListViewModel::class.java)
@@ -48,6 +50,8 @@ class CrimeListFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_crime_list, container, false)
 
+        adapter.submitList(emptyList())
+
         crimeRecyclerView =
             view.findViewById(R.id.crime_recycler_view) as RecyclerView
         crimeRecyclerView.layoutManager = LinearLayoutManager(context)
@@ -62,7 +66,7 @@ class CrimeListFragment : Fragment() {
             Observer { crimes ->
                 crimes?.let {
                     Log.i(TAG, "Got crimes ${crimes.size}")
-                    updateUI(crimes)
+                    adapter.submitList(crimes)
                 }
             }
         )
@@ -71,11 +75,6 @@ class CrimeListFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         callbacks = null
-    }
-
-    private fun updateUI(crimes: List<Crime>) {
-        adapter = CrimeAdapter(crimes)
-        crimeRecyclerView.adapter = adapter
     }
 
     private inner class CrimeHolder(view: View)
@@ -107,19 +106,24 @@ class CrimeListFragment : Fragment() {
         }
     }
 
-    private inner class CrimeAdapter(var crimes: List<Crime>)
-        : RecyclerView.Adapter<CrimeHolder>() {
+    private inner class CrimeDiffCallback : DiffUtil.ItemCallback<Crime>() {
+        override fun areItemsTheSame(oldItem: Crime, newItem: Crime): Boolean {
+            return oldItem.id == newItem.id
+        }
 
+        override fun areContentsTheSame(oldItem: Crime, newItem: Crime): Boolean {
+            return oldItem  == newItem
+        }
+    }
+
+    private inner class CrimeAdapter() : androidx.recyclerview.widget.ListAdapter<Crime, CrimeHolder>(CrimeDiffCallback()) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CrimeHolder {
             val view = layoutInflater.inflate(R.layout.list_item_crime, parent, false)
             return CrimeHolder(view)
         }
 
-        override fun getItemCount() = crimes.size
-
         override fun onBindViewHolder(holder: CrimeHolder, position: Int) {
-            val crime = crimes[position]
-            holder.bind(crime)
+            holder.bind(getItem(position))
         }
     }
 
