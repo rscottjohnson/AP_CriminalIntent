@@ -24,6 +24,12 @@ android {
         }
     }
 
+    kapt {
+        arguments {
+            arg("room.schemaLocation", "${project.projectDir}/dbschema/")
+        }
+    }
+
 }
 
 dependencies {
